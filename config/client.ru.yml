@@ -1,5 +1,0 @@
-ru:
-  js:
-    ai_for_instruments:
-      button_text: "AI-документация"
-      run_process: "Отправить эту тему в n8n для обработки"

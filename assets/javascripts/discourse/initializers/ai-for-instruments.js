@@ -25,7 +25,7 @@ export default apiInitializer("1.0", (api) => {
     // 2. Добавляем кнопку через dag.add
     // Синтаксис: dag.add("уникальный-ключ", КлассКомпонента, { опции })
     dag.add("ai-doc-n8n", AiN8nButton, {
-      before: "delete", // Поставить перед кнопкой удаления (или используйте after: "...")
+      before: "reply", 
     });
 
     return dag;
