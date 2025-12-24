@@ -1,70 +1,72 @@
 import { apiInitializer } from "discourse/lib/api";
 import { ajax } from "discourse/lib/ajax";
 import { popupAjaxError } from "discourse/lib/ajax-error";
-import { bind } from "discourse-common/utils/decorators";
 
 export default apiInitializer("1.0", (api) => {
   const siteSettings = api.container.lookup("service:site-settings");
   const currentUser = api.getCurrentUser();
 
-  // Если плагин выключен или юзер не залогинен — ничего не делаем
   if (!currentUser) return;
 
-  // Парсим разрешенные категории из настроек
+  // Парсим категории один раз
   const allowedCategories = (siteSettings.ai_for_instruments_categories || "")
     .split("|")
     .map((id) => parseInt(id, 10))
     .filter(Boolean);
 
-  // 1. Добавляем кнопку в меню поста
-  api.addPostMenuButton("ai-doc-n8n", (attrs) => {
-    // --- ПРОВЕРКИ ВИДИМОСТИ ---
+  // Используем новый API (Value Transformer) вместо старых виджетов
+  api.registerValueTransformer("post-menu-buttons", ({ value: buttons, context }) => {
+    // context.post - это модель поста
+    const post = context.post;
 
-    // Только первый пост темы
-    if (attrs.post_number !== 1) return;
+    // --- ПРОВЕРКИ ---
+    // 1. Только первый пост темы
+    if (post.post_number !== 1) return buttons;
 
-    // Только если пользователь — автор поста (владелец темы)
-    if (attrs.user_id !== currentUser.id) return;
+    // 2. Только владелец поста (или админ, если нужно, но у вас проверка по владельцу)
+    if (post.user_id !== currentUser.id) return buttons;
 
-    // Получаем текущую тему, чтобы проверить категорию
-    const topicController = api.container.lookup("controller:topic");
-    if (!topicController) return;
+    // 3. Проверка категории
+    // В трансформере category_id обычно доступен прямо в post, если нет - берем из топика
+    const categoryId = post.category_id || post.topic?.category_id;
+    if (!allowedCategories.includes(categoryId)) return buttons;
 
-    const topic = topicController.get("model");
-    // Проверяем категорию темы
-    if (!topic || !allowedCategories.includes(topic.category_id)) return;
-
-    // --- НАСТРОЙКИ КНОПКИ ---
-    return {
-      action: "sendToN8n",           // Имя действия (связывается ниже)
-      icon: "book",                  // Иконка (FontAwesome)
+    // --- ДОБАВЛЕНИЕ КНОПКИ ---
+    // Находим позицию перед кнопкой "delete" или в конец, если её нет.
+    // Вы можете просто использовать push, чтобы добавить в конец.
+    const myButton = {
+      id: "ai-doc-n8n",
+      name: "ai-doc-n8n",
+      icon: "book",
       className: "ai-instruments-btn",
-      title: "ai_for_instruments.run_process", // Ссылка на текст всплывающей подсказки
-      label: "ai_for_instruments.button_text", // Ссылка на текст кнопки
-      position: "second-last-hidden" // Позиция в меню
-    };
-  });
-
-  // 2. Логика при нажатии на кнопку
-  api.attachWidgetAction("post-menu", "sendToN8n", function() {
-    const topicId = this.model.topic_id;
-    const dialog = api.container.lookup("service:dialog");
-
-    // Простое подтверждение на русском
-    dialog.confirm({
-      message: "Отправить тему в AI для генерации документации?",
-      didConfirm: () => {
-        // Отправка запроса на ваш серверный контроллер
-        // Обратите внимание: путь должен совпадать с routes.rb
-        ajax("/ai_for_instruments/send_webhook", {
-          type: "POST",
-          data: { topic_id: topicId }
-        })
-          .then(() => {
-            dialog.alert("Успешно! Задача отправлена.");
-          })
-          .catch(popupAjaxError);
+      title: "ai_for_instruments.run_process", // Ключ перевода для тултипа
+      label: "ai_for_instruments.button_text", // Ключ перевода для текста
+      position: "second-last-hidden", // Или можно управлять порядком через splice
+      
+      // В новой системе action - это прямо функция!
+      action: () => {
+        const dialog = api.container.lookup("service:dialog");
+        
+        dialog.confirm({
+          message: "Отправить тему в AI для генерации документации?",
+          didConfirm: () => {
+            // Визуальная обратная связь (опционально можно добавить лоадер)
+            ajax("/ai_for_instruments/send_webhook", {
+              type: "POST",
+              data: { topic_id: post.topic_id }
+            })
+              .then(() => {
+                dialog.alert("Успешно! Задача отправлена.");
+              })
+              .catch(popupAjaxError);
+          }
+        });
       }
-    });
+    };
+
+    // Добавляем кнопку в список
+    buttons.push(myButton);
+
+    return buttons;
   });
 });
