@@ -13,6 +13,9 @@ export default class AiN8nButton extends Component {
   async sendToN8n() {
     const topicId = this.args.post.topic_id;
 
+    const left = this.args.post.ai_requests_left; 
+    let msg = I18n.t("ai_for_instruments.confirm_message");
+
     if (left !== undefined && left !== null) {
       msg += `\n\n${I18n.t("ai_for_instruments.attempts_left", { count: left })}`;
     }
