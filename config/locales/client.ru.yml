@@ -5,6 +5,6 @@ ru:
       reset_button_text: "Сброс лимита"
       run_process: "Отправить файл в LLM"
       confirm_message: "Отправить тему в AI для генерации документации?"
-      attempts_left: "Осталось генераций сегодня: %{count}"
+      attempts_left: "Осталось генераций в текущем периоде: %{count}"
       success_sent: "Успешно! Задача отправлена."
-      limit_reached: "Лимит на сегодня исчерпан."
+      limit_reached: "Лимит генераций исчерпан."

@@ -13,3 +13,16 @@ plugins:
     default: 0
     type: category_list
     client: true
+
+  ai_for_instruments_max_attempts:
+    default: 3
+    min: 1
+    type: integer
+    client: true
+
+  ai_for_instruments_reset_hours:
+    default: 24
+    min: 1
+    type: integer
+    client: true
+    description: "Через сколько часов сбрасывать счетчик использования."

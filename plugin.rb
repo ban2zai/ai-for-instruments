@@ -6,32 +6,38 @@
 
 enabled_site_setting :ai_for_instruments_categories
 
-# 1. Загружаем определение Engine
 load File.expand_path('../lib/ai_for_instruments/engine.rb', __FILE__)
 
-# 2. Монтируем Engine к основному приложению Discourse
 Discourse::Application.routes.append do
   mount ::AiForInstruments::Engine, at: "/ai_for_instruments"
 end
 
 after_initialize do
-  # Добавляем поле 'ai_requests_left' в модель поста (JSON), который уходит на фронт
   add_to_serializer(:post, :ai_requests_left) do
-    # Логика расчета остатка
-    # Выполняем только для первого поста темы, чтобы не нагружать базу лишними запросами
+    # Считаем только для первого поста
     return nil if object.post_number != 1
     
-    # 1. Получаем данные из хранилища
     store_key = "topic_#{object.topic_id}_ai_usage"
     usage_data = ::PluginStore.get('ai-for-instruments', store_key) || {}
     
-    # 2. Проверяем дату (UTC). Если дата сменилась — считаем, что использовано 0
-    today = Time.now.utc.to_date.to_s
-    used_today = (usage_data['date'] == today) ? usage_data['count'].to_i : 0
-    
-    # 3. Считаем остаток
+    # Получаем настройки
     max_runs = SiteSetting.ai_for_instruments_max_attempts
-    left = max_runs - used_today
+    reset_hours = SiteSetting.ai_for_instruments_reset_hours
+    
+    # Логика времени
+    last_window_start = usage_data['window_start'] ? Time.parse(usage_data['window_start']) : Time.at(0)
+    time_passed = Time.now.utc - last_window_start
+    
+    # Если прошло больше времени, чем задано в настройках (в секундах)
+    if time_passed > reset_hours.hours
+      # Считаем, что счетчик сбросился
+      used_count = 0
+    else
+      # Иначе берем текущее значение
+      used_count = usage_data['count'].to_i
+    end
+    
+    left = max_runs - used_count
     left < 0 ? 0 : left
   end
 end
