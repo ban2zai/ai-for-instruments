@@ -1,20 +1,35 @@
 import { apiInitializer } from "discourse/lib/api";
 
-export default apiInitializer((api) => {
-  const ALLOWED_CATEGORY_ID = parseInt(Discourse.SiteSettings.ai_for_instruments_category);
+export default apiInitializer("0.11.1", (api) => {
+  function insertAiButton() {
+    const allowedCategoryId = parseInt(Discourse.SiteSettings.ai_for_instruments_category);
 
-  function insertButton(postMenu) {
-    if (!postMenu) return;
+    const postMenu = document.querySelector(
+      ".topic-post:first-of-type section.post__menu-area nav.post-controls .actions"
+    );
 
-    // Проверка, что кнопка ещё не вставлена
-    if (postMenu.querySelector(".ai-instruments-btn")) return;
+    if (!postMenu) {
+      console.warn("postMenu не найден, попробуем позже");
+      return false;
+    }
+
+    if (postMenu.querySelector(".ai-instruments-btn")) {
+      console.warn("Кнопка уже вставлена");
+      return true;
+    }
 
     const currentCategoryId = parseInt(
       document.querySelector(".topic-category [data-category-id]")?.dataset.categoryId
     );
 
-    if (!ALLOWED_CATEGORY_ID || currentCategoryId !== ALLOWED_CATEGORY_ID) {
-      return; // Категория не подходит
+    console.log("=== AI for Instruments Debug ===");
+    console.log("allowedCategoryId:", allowedCategoryId);
+    console.log("currentCategoryId:", currentCategoryId);
+    console.log("postMenu найден:", postMenu);
+
+    if (!allowedCategoryId || currentCategoryId !== allowedCategoryId) {
+      console.warn("Категория не подходит, кнопка не вставляется");
+      return false;
     }
 
     const button = document.createElement("button");
@@ -30,30 +45,32 @@ export default apiInitializer((api) => {
     `;
 
     button.addEventListener("click", () => {
-      alert("Кнопка нажата!");
-      // Здесь можно вызывать свой контроллер плагина через fetch/post
+      console.log("AI кнопка нажата");
+      console.log("HMAC секрет:", Discourse.SiteSettings.ai_for_instruments_hmac_secret);
+      // Здесь можно добавить вызов твоего webhook
+      alert("Кнопка нажата (пока без вызова webhook)");
     });
 
     postMenu.prepend(button);
+    console.log("Кнопка успешно вставлена");
+    return true;
   }
 
-  // MutationObserver для динамических изменений DOM
-  const observer = new MutationObserver((mutations) => {
-    const postMenu = document.querySelector(
-      ".topic-post:first-of-type section.post__menu-area nav.post-controls .actions"
-    );
-    if (postMenu) insertButton(postMenu);
+  // Первичная попытка вставки
+  insertAiButton();
+
+  // Если DOM подгружается позже, используем MutationObserver
+  const observer = new MutationObserver(() => {
+    const inserted = insertAiButton();
+    if (inserted) {
+      observer.disconnect(); // отключаем, когда кнопка вставлена
+    }
   });
 
-  observer.observe(document.body, { childList: true, subtree: true });
-
-  // Для первичной вставки при полной загрузке
-  api.onPageChange(() => {
-    setTimeout(() => {
-      const postMenu = document.querySelector(
-        ".topic-post:first-of-type section.post__menu-area nav.post-controls .actions"
-      );
-      insertButton(postMenu);
-    }, 200);
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
   });
+
+  console.log("MutationObserver для AI кнопки активирован");
 });
