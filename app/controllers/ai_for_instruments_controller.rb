@@ -13,8 +13,8 @@ class AiForInstrumentsController < ApplicationController
       return render json: { error: "not_topic_owner" }, status: 403
     end
 
-    category_id = SiteSetting.ai_for_instruments_category
-    if category_id.present? && topic.category_id != category_id.to_i
+    category_id = SiteSetting.ai_for_instruments_category.to_i
+    if category_id.positive? && topic.category_id != category_id
       return render json: { error: "wrong_category" }, status: 400
     end
 
