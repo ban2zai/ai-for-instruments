@@ -1,12 +1,10 @@
 import { apiInitializer } from "discourse/lib/api";
 
-export default apiInitializer("0.11.1", (api) => {
-
+export default apiInitializer("", (api) => {
   function tryInsertButton() {
-    const currentUser = Discourse.User.current();
-
-    const topicController = api.container.lookup("controller:topic");
-    const topic = topicController?.model;
+    const currentUser = api.getCurrentUser();
+    const route = api.getCurrentRoute();
+    const topic = route?.model;
 
     if (!currentUser || !topic) {
       console.debug("[AI] user or topic not ready");
@@ -24,7 +22,7 @@ export default apiInitializer("0.11.1", (api) => {
       Discourse.SiteSettings.ai_for_instruments_categories || ""
     )
       .split("|")
-      .map((id) => parseInt(id, 10))
+      .map((id) => parseInt(id))
       .filter(Boolean);
 
     if (!allowedCategories.length) {
@@ -34,8 +32,7 @@ export default apiInitializer("0.11.1", (api) => {
 
     const currentCategoryId = parseInt(
       document.querySelector(".topic-category [data-category-id]")?.dataset
-        .categoryId,
-      10
+        .categoryId
     );
 
     if (!allowedCategories.includes(currentCategoryId)) {
@@ -49,12 +46,10 @@ export default apiInitializer("0.11.1", (api) => {
 
     if (!postMenu) {
       console.debug("[AI] postMenu not found");
-      console.debug("[AI] postMenu not found");
       return false;
     }
 
     if (postMenu.querySelector(".ai-instruments-btn")) {
-      console.debug("[AI] button already inserted");
       return true;
     }
 
@@ -97,22 +92,11 @@ export default apiInitializer("0.11.1", (api) => {
 
     postMenu.prepend(button);
     console.info("[AI] button inserted");
-    console.info("[AI] button inserted");
     return true;
   }
 
-  // первичная попытка вставки кнопки
-  tryInsertButton();
-
-  // SPA навигация
-  api.onPageChange(() => {
-    console.log("[AI] page changed");
-    tryInsertButton();
-  });
-
-  // MutationObserver на случай динамического DOM
+  // MutationObserver для динамического DOM
   const observer = new MutationObserver(() => {
-    if (tryInsertButton()) observer.disconnect();
     if (tryInsertButton()) observer.disconnect();
   });
 
@@ -121,5 +105,7 @@ export default apiInitializer("0.11.1", (api) => {
     subtree: true,
   });
 
-  console.log("[AI] MutationObserver for AI button activated");
+  // первичная попытка вставки
+  tryInsertButton();
+  console.info("[AI] MutationObserver для кнопки активирован");
 });
