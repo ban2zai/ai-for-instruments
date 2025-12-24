@@ -6,4 +6,3 @@
 
 enabled_site_setting :ai_for_instruments_category
 
-register_asset "javascripts/ai-for-instruments/theme-initializer.js"
