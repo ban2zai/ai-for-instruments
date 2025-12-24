@@ -6,3 +6,10 @@
 
 enabled_site_setting :ai_for_instruments_categories
 
+# 1. Загружаем определение Engine
+load File.expand_path('../lib/ai_for_instruments/engine.rb', __FILE__)
+
+# 2. Монтируем Engine к основному приложению Discourse
+Discourse::Application.routes.append do
+  mount ::AiForInstruments::Engine, at: "/ai_for_instruments"
+end

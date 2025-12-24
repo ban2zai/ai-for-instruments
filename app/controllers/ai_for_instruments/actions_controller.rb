@@ -1,5 +1,5 @@
 module AiForInstruments
-  class AiForInstrumentsController < ::ApplicationController
+  class ActionsController < ::ApplicationController
     requires_plugin 'ai-for-instruments'
 
     before_action :ensure_logged_in
