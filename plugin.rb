@@ -9,15 +9,3 @@ enabled_site_setting :ai_for_instruments_enabled
 after_initialize do
   load File.expand_path('../app/controllers/ai_for_instruments_controller.rb', __FILE__)
 end
-
-register_site_setting(
-  :ai_for_instruments_webhook_url,
-  type: :string,
-  default: ""
-)
-
-register_site_setting(
-  :ai_for_instruments_hmac_secret,
-  type: :string,
-  default: ""
-)
