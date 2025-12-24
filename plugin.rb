@@ -4,5 +4,5 @@
 # authors: ban2zai
 # url: https://github.com/ban2zai/ai-for-instruments/
 
-enabled_site_setting :ai_for_instruments_category
+enabled_site_setting :ai_for_instruments_categories
 
