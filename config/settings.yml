@@ -9,7 +9,7 @@ plugins:
     type: string
     client: false
 
-  ai_for_instruments_category:
+  ai_for_instruments_categories:
     default: 0
-    type: category
+    type: category_list
     client: true

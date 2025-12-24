@@ -15,8 +15,12 @@ module AiForInstruments
         return render json: { error: "not_topic_owner" }, status: 403
       end
 
-      category_id = SiteSetting.ai_for_instruments_category.to_i
-      if category_id.positive? && topic.category_id != category_id
+      allowed_categories = SiteSetting.ai_for_instruments_categories
+        .to_s
+        .split("|")
+        .map(&:to_i)
+
+      if allowed_categories.any? && !allowed_categories.include?(topic.category_id)
         return render json: { error: "wrong_category" }, status: 400
       end
 
