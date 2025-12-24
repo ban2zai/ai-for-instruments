@@ -2,4 +2,9 @@ ru:
   js:
     ai_for_instruments:
       button_text: "AI-документация"
-      run_process: "Отправить этот файл в LLM"
+      reset_button_text: "Сброс лимита"
+      run_process: "Отправить файл в LLM"
+      confirm_message: "Отправить тему в AI для генерации документации?"
+      attempts_left: "Осталось генераций сегодня: %{count}"
+      success_sent: "Успешно! Задача отправлена."
+      limit_reached: "Лимит на сегодня исчерпан."

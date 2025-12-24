@@ -1,4 +1,4 @@
 AiForInstruments::Engine.routes.draw do
-  # actions#send_webhook означает: ActionsController, метод send_webhook
   post "/send_webhook" => "actions#send_webhook"
+  post "/reset_limit" => "actions#reset_limit"
 end
