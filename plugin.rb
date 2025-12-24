@@ -9,3 +9,4 @@ enabled_site_setting :ai_for_instruments_enabled
 after_initialize do
   load File.expand_path('../app/controllers/ai_for_instruments_controller.rb', __FILE__)
 end
+
