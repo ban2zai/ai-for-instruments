@@ -1,10 +1,12 @@
 import { apiInitializer } from "discourse/lib/api";
 
 export default apiInitializer("0.11.1", (api) => {
+
   function tryInsertButton() {
-    const currentUser = api.getCurrentUser();
-    const route = api.getCurrentRoute();
-    const topic = route?.model;
+    const currentUser = Discourse.User.current();
+
+    const topicController = api.container.lookup("controller:topic");
+    const topic = topicController?.model;
 
     if (!currentUser || !topic) {
       console.debug("[AI] user or topic not ready");
@@ -22,7 +24,7 @@ export default apiInitializer("0.11.1", (api) => {
       Discourse.SiteSettings.ai_for_instruments_categories || ""
     )
       .split("|")
-      .map((id) => parseInt(id))
+      .map((id) => parseInt(id, 10))
       .filter(Boolean);
 
     if (!allowedCategories.length) {
@@ -32,7 +34,8 @@ export default apiInitializer("0.11.1", (api) => {
 
     const currentCategoryId = parseInt(
       document.querySelector(".topic-category [data-category-id]")?.dataset
-        .categoryId
+        .categoryId,
+      10
     );
 
     if (!allowedCategories.includes(currentCategoryId)) {
@@ -50,13 +53,16 @@ export default apiInitializer("0.11.1", (api) => {
     }
 
     if (postMenu.querySelector(".ai-instruments-btn")) {
+      console.debug("[AI] button already inserted");
       return true;
     }
 
-    // кнопка
+    // создаём кнопку
     const button = document.createElement("button");
     button.className = "btn btn-icon-text btn-flat ai-instruments-btn";
     button.type = "button";
+    button.title = "AI-документация";
+
     button.innerHTML = `
       <svg class="fa d-icon d-icon-book svg-icon" aria-hidden="true">
         <use href="#book"></use>
@@ -82,7 +88,7 @@ export default apiInitializer("0.11.1", (api) => {
 
         alert("Задача отправлена в AI");
       } catch (e) {
-        console.error(e);
+        console.error("[AI] send-topic error:", e);
         alert("Ошибка при отправке");
       } finally {
         button.disabled = false;
@@ -95,7 +101,16 @@ export default apiInitializer("0.11.1", (api) => {
     return true;
   }
 
-  // MutationObserver
+  // первичная попытка вставки кнопки
+  tryInsertButton();
+
+  // SPA навигация
+  api.onPageChange(() => {
+    console.log("[AI] page changed");
+    tryInsertButton();
+  });
+
+  // MutationObserver на случай динамического DOM
   const observer = new MutationObserver(() => {
     if (tryInsertButton()) observer.disconnect();
   });
@@ -104,4 +119,6 @@ export default apiInitializer("0.11.1", (api) => {
     childList: true,
     subtree: true,
   });
+
+  console.log("[AI] MutationObserver for AI button activated");
 });
