@@ -49,6 +49,7 @@ export default apiInitializer("0.11.1", (api) => {
 
     if (!postMenu) {
       console.debug("[AI] postMenu not found");
+      console.debug("[AI] postMenu not found");
       return false;
     }
 
@@ -61,8 +62,6 @@ export default apiInitializer("0.11.1", (api) => {
     const button = document.createElement("button");
     button.className = "btn btn-icon-text btn-flat ai-instruments-btn";
     button.type = "button";
-    button.title = "AI-документация";
-
     button.innerHTML = `
       <svg class="fa d-icon d-icon-book svg-icon" aria-hidden="true">
         <use href="#book"></use>
@@ -98,6 +97,7 @@ export default apiInitializer("0.11.1", (api) => {
 
     postMenu.prepend(button);
     console.info("[AI] button inserted");
+    console.info("[AI] button inserted");
     return true;
   }
 
@@ -112,6 +112,7 @@ export default apiInitializer("0.11.1", (api) => {
 
   // MutationObserver на случай динамического DOM
   const observer = new MutationObserver(() => {
+    if (tryInsertButton()) observer.disconnect();
     if (tryInsertButton()) observer.disconnect();
   });
 
