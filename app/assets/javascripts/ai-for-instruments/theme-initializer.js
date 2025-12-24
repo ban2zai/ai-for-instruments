@@ -1,35 +1,20 @@
 import { apiInitializer } from "discourse/lib/api";
 
-export default apiInitializer(() => {
-  setTimeout(() => {
-    const allowedCategoryId = parseInt(Discourse.SiteSettings.ai_for_instruments_category);
+export default apiInitializer((api) => {
+  const ALLOWED_CATEGORY_ID = parseInt(Discourse.SiteSettings.ai_for_instruments_category);
 
-    const postMenu = document.querySelector(
-      ".topic-post:first-of-type section.post__menu-area nav.post-controls .actions"
-    );
+  function insertButton(postMenu) {
+    if (!postMenu) return;
 
-    console.log("allowedCategoryId:", allowedCategoryId);
-    console.log("postMenu:", postMenu);
+    // Проверка, что кнопка ещё не вставлена
+    if (postMenu.querySelector(".ai-instruments-btn")) return;
 
     const currentCategoryId = parseInt(
       document.querySelector(".topic-category [data-category-id]")?.dataset.categoryId
     );
 
-    console.log("currentCategoryId:", currentCategoryId);
-
-    if (!postMenu) {
-      console.warn("postMenu не найден");
-      return;
-    }
-
-    if (!allowedCategoryId || currentCategoryId !== allowedCategoryId) {
-      console.warn("Категория не подходит, кнопка не вставляется");
-      return;
-    }
-
-    if (postMenu.querySelector(".ai-instruments-btn")) {
-      console.warn("Кнопка уже вставлена");
-      return;
+    if (!ALLOWED_CATEGORY_ID || currentCategoryId !== ALLOWED_CATEGORY_ID) {
+      return; // Категория не подходит
     }
 
     const button = document.createElement("button");
@@ -46,8 +31,29 @@ export default apiInitializer(() => {
 
     button.addEventListener("click", () => {
       alert("Кнопка нажата!");
+      // Здесь можно вызывать свой контроллер плагина через fetch/post
     });
 
     postMenu.prepend(button);
-  }, 200);
+  }
+
+  // MutationObserver для динамических изменений DOM
+  const observer = new MutationObserver((mutations) => {
+    const postMenu = document.querySelector(
+      ".topic-post:first-of-type section.post__menu-area nav.post-controls .actions"
+    );
+    if (postMenu) insertButton(postMenu);
+  });
+
+  observer.observe(document.body, { childList: true, subtree: true });
+
+  // Для первичной вставки при полной загрузке
+  api.onPageChange(() => {
+    setTimeout(() => {
+      const postMenu = document.querySelector(
+        ".topic-post:first-of-type section.post__menu-area nav.post-controls .actions"
+      );
+      insertButton(postMenu);
+    }, 200);
+  });
 });
