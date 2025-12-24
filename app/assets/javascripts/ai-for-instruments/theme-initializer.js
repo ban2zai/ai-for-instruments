@@ -2,20 +2,25 @@ import { apiInitializer } from "discourse/lib/api";
 
 export default apiInitializer(api => {
   function insertButton() {
+    // проверяем выбранную категорию в настройках
     const allowedCategoryId = parseInt(Discourse.SiteSettings.ai_for_instruments_category, 10);
     if (!allowedCategoryId) return;
 
+    // ищем категорию в DOM
     const categorySpan = document.querySelector(".topic-category [data-category-id]");
     const currentCategoryId = categorySpan ? parseInt(categorySpan.dataset.categoryId, 10) : 0;
 
+    // если категория не совпадает, не показываем кнопку
     if (allowedCategoryId > 0 && currentCategoryId !== allowedCategoryId) return;
 
+    // ищем меню поста первого сообщения
     const postMenu = document.querySelector(
       ".topic-post:first-of-type section.post__menu-area nav.post-controls .actions"
     );
     if (!postMenu) return;
-    if (postMenu.querySelector(".ai-instruments-btn")) return;
+    if (postMenu.querySelector(".ai-instruments-btn")) return; // защита от повторного добавления
 
+    // создаём кнопку
     const button = document.createElement("button");
     button.className = "btn btn-icon-text btn-flat ai-instruments-btn";
     button.type = "button";
@@ -55,7 +60,9 @@ export default apiInitializer(api => {
     postMenu.prepend(button);
   }
 
+  // при загрузке страницы и навигации в SPA
   api.onPageChange(() => {
-    setTimeout(insertButton, 300);
+    // даём Discourse дорендерить DOM
+    setTimeout(insertButton, 500);
   });
 });
