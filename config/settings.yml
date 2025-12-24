@@ -1,9 +1,4 @@
 plugins:
-  ai_for_instruments_enabled:
-    default: true
-    type: boolean
-    client: true
-
   ai_for_instruments_webhook_url:
     default: ""
     type: string
