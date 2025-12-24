@@ -1,85 +1,70 @@
 import { apiInitializer } from "discourse/lib/api";
+import { ajax } from "discourse/lib/ajax";
+import { popupAjaxError } from "discourse/lib/ajax-error";
+import { bind } from "discourse-common/utils/decorators";
 
-export default apiInitializer("", (api) => {
-  function tryInsertButton() {
-    const currentUser = api.getCurrentUser();
-    if (!currentUser) return false;
+export default apiInitializer("1.0", (api) => {
+  const siteSettings = api.container.lookup("service:site-settings");
+  const currentUser = api.getCurrentUser();
 
-    const topicElement = document.querySelector(".topic-post:first-of-type");
-    if (!topicElement) return false;
+  // Если плагин выключен или юзер не залогинен — ничего не делаем
+  if (!currentUser) return;
 
-    const topicId = parseInt(topicElement.dataset.postId || topicElement.dataset.topicId);
-    if (!topicId) return false;
+  // Парсим разрешенные категории из настроек
+  const allowedCategories = (siteSettings.ai_for_instruments_categories || "")
+    .split("|")
+    .map((id) => parseInt(id, 10))
+    .filter(Boolean);
 
-    const topicUserId = parseInt(topicElement.dataset.userId);
-    if (topicUserId !== currentUser.id) return false; // проверка владельца
+  // 1. Добавляем кнопку в меню поста
+  api.addPostMenuButton("ai-doc-n8n", (attrs) => {
+    // --- ПРОВЕРКИ ВИДИМОСТИ ---
 
-    const currentCategoryId = parseInt(
-      document.querySelector(".topic-category [data-category-id]")?.dataset.categoryId
-    );
+    // Только первый пост темы
+    if (attrs.post_number !== 1) return;
 
-    const allowedCategories = (
-      Discourse.SiteSettings.ai_for_instruments_categories || ""
-    )
-      .split("|")
-      .map((id) => parseInt(id))
-      .filter(Boolean);
+    // Только если пользователь — автор поста (владелец темы)
+    if (attrs.user_id !== currentUser.id) return;
 
-    if (!allowedCategories.includes(currentCategoryId)) return false;
+    // Получаем текущую тему, чтобы проверить категорию
+    const topicController = api.container.lookup("controller:topic");
+    if (!topicController) return;
 
-    const postMenu = topicElement.querySelector(
-      "section.post__menu-area nav.post-controls .actions"
-    );
-    if (!postMenu) return false;
+    const topic = topicController.get("model");
+    // Проверяем категорию темы
+    if (!topic || !allowedCategories.includes(topic.category_id)) return;
 
-    if (postMenu.querySelector(".ai-instruments-btn")) return true;
-
-    const button = document.createElement("button");
-    button.className = "btn btn-icon-text btn-flat ai-instruments-btn";
-    button.type = "button";
-    button.innerHTML = `
-      <svg class="fa d-icon d-icon-book svg-icon" aria-hidden="true">
-        <use href="#book"></use>
-      </svg>
-      <span class="d-button-label">AI-документация</span>
-    `;
-
-    button.addEventListener("click", async () => {
-      button.disabled = true;
-      button.classList.add("is-loading");
-
-      try {
-        const res = await fetch("/ai-for-instruments/send-topic", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": api.getCSRFToken(),
-          },
-          body: JSON.stringify({ topic_id: topicId }),
-        });
-
-        if (!res.ok) throw new Error("Request failed");
-        alert("Задача отправлена в AI");
-      } catch (e) {
-        console.error("[AI] send-topic error:", e);
-        alert("Ошибка при отправке");
-      } finally {
-        button.disabled = false;
-        button.classList.remove("is-loading");
-      }
-    });
-
-    postMenu.prepend(button);
-    console.info("[AI] button inserted");
-    return true;
-  }
-
-  const observer = new MutationObserver(() => {
-    if (tryInsertButton()) observer.disconnect();
+    // --- НАСТРОЙКИ КНОПКИ ---
+    return {
+      action: "sendToN8n",           // Имя действия (связывается ниже)
+      icon: "book",                  // Иконка (FontAwesome)
+      className: "ai-instruments-btn",
+      title: "ai_for_instruments.run_process", // Ссылка на текст всплывающей подсказки
+      label: "ai_for_instruments.button_text", // Ссылка на текст кнопки
+      position: "second-last-hidden" // Позиция в меню
+    };
   });
 
-  observer.observe(document.body, { childList: true, subtree: true });
+  // 2. Логика при нажатии на кнопку
+  api.attachWidgetAction("post-menu", "sendToN8n", function() {
+    const topicId = this.model.topic_id;
+    const dialog = api.container.lookup("service:dialog");
 
-  // первичная попытка вставки
-  tryInsertButton();
+    // Простое подтверждение на русском
+    dialog.confirm({
+      message: "Отправить тему в AI для генерации документации?",
+      didConfirm: () => {
+        // Отправка запроса на ваш серверный контроллер
+        // Обратите внимание: путь должен совпадать с routes.rb
+        ajax("/ai_for_instruments/send_webhook", {
+          type: "POST",
+          data: { topic_id: topicId }
+        })
+          .then(() => {
+            dialog.alert("Успешно! Задача отправлена.");
+          })
+          .catch(popupAjaxError);
+      }
+    });
+  });
 });
