@@ -1,0 +1,10 @@
+plugins:
+  ai_for_instruments_enabled:
+    default: true
+    client: true
+  ai_for_instruments_webhook_url:
+    default: ""
+    client: true
+  ai_for_instruments_hmac_secret:
+    default: ""
+    client: false
