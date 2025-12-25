@@ -81,6 +81,8 @@ module AiForInstruments
         user_id: current_user.id,
         username: current_user.username,
         is_admin_trigger: is_admin, # Полезно для логики внутри n8n
+        file_url: params[:file_url],
+        file_name: params[:file_name],
         created_at: Time.now.utc.iso8601
       }
 

@@ -26,3 +26,9 @@ plugins:
     type: integer
     client: true
     description: "Через сколько часов сбрасывать счетчик использования."
+
+  ai_for_instruments_allowed_extensions:
+    default: "cf|epf|cfe|erf"
+    type: string
+    client: true
+    description: "Расширения файлов для обработки (через разделитель |). Например: cf|epf|cfe|erf"
