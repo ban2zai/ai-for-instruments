@@ -1,10 +1,12 @@
 import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
 import { action } from "@ember/object";
-import { fn } from "@ember/helper"; // <-- ВАЖНО: Добавьте этот импорт для работы {{fn}}
+import { fn } from "@ember/helper";
+import { on } from "@ember/modifier";
+import eq from "truth-helpers/helpers/eq";
+
 import DModal from "discourse/components/d-modal";
 import DButton from "discourse/components/d-button";
-import eq from "truth-helpers/helpers/eq"; // <-- ВАЖНО: Импорт хелпера сравнения
 
 export default class AiFileSelectionModal extends Component {
   @tracked selectedFile = this.args.model.files[0];
