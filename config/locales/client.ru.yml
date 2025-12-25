@@ -3,8 +3,13 @@ ru:
     ai_for_instruments:
       button_text: "AI-документация"
       reset_button_text: "Сброс лимита"
-      run_process: "Отправить файл в LLM"
-      confirm_message: "Отправить тему в AI для генерации документации?"
+      run_process: "Выбрать файл и отправить в LLM"
+      send_button: "Отправить"
+      no_files_found: "Файлы для обработки не найдены. Поддерживаются только: %{extensions}"
+
+      select_file_title: "Отправка в AI"
+      select_file_msg: "Выберите файл, который необходимо отправить на обработку:"
+      
       attempts_left: "Осталось генераций в текущем периоде: %{count}"
-      success_sent: "Успешно! Задача отправлена."
+      success_sent: "Успешно! Файл отправлен в обработку."
       limit_reached: "Лимит генераций исчерпан."
