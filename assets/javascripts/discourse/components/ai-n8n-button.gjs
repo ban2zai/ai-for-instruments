@@ -72,6 +72,7 @@ export default class AiN8nButton extends Component {
     });
   }
 
+
   extractFiles(htmlContent) {
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlContent, "text/html");
