@@ -135,5 +135,87 @@ module AiForInstruments
 
       render json: { ok: true }
     end
+
+    # GET /ai_for_instruments/chat_history?post_id=X
+    def chat_history
+      post_id = params[:post_id]
+      history_key = "chat_history_#{post_id}_#{current_user.id}"
+      history = ::PluginStore.get('ai-for-instruments', history_key) || []
+      
+      render json: { history: history }
+    end
+
+    # POST /ai_for_instruments/chat
+    def chat
+      post_id = params[:post_id]
+      message = params[:message]
+      
+      # 1. Проверка поста
+      post = Post.find_by(id: post_id)
+      raise Discourse::NotFound unless post
+      guardian.ensure_can_see!(post)
+
+      # 2. Получение и обновление истории
+      history_key = "chat_history_#{post_id}_#{current_user.id}"
+      history = ::PluginStore.get('ai-for-instruments', history_key) || []
+      
+      # Добавляем сообщение пользователя в историю
+      user_entry = { role: "user", content: message, created_at: Time.now.utc.iso8601 }
+      history << user_entry
+
+      # 3. Подготовка payload для n8n
+      payload = {
+        post_id: post.id,
+        topic_id: post.topic_id,
+        user_id: current_user.id,
+        username: current_user.username,
+        post_content: post.cooked,
+        history: history,
+        new_message: message
+      }
+
+      # HMAC
+      secret = SiteSetting.ai_for_instruments_hmac_secret
+      signature = OpenSSL::HMAC.hexdigest("SHA256", secret, payload.to_json)
+
+      # 4. Запрос в n8n
+      begin
+        response = Excon.post(
+          SiteSetting.ai_for_instruments_chat_webhook_url,
+          body: payload.to_json,
+          headers: {
+            "Content-Type" => "application/json",
+            "X-Signature" => signature
+          }
+        )
+
+        if response.status == 200
+          ai_response = JSON.parse(response.body)["reply"] || "No response from AI"
+          
+          # Добавляем ответ ИИ в историю
+          ai_entry = { role: "assistant", content: ai_response, created_at: Time.now.utc.iso8601 }
+          history << ai_entry
+          
+          # Сохраняем обновленную историю (лимитируем до 50 сообщений)
+          ::PluginStore.set('ai-for-instruments', history_key, history.last(50))
+          
+          render json: { reply: ai_response }
+        else
+          render_json_error "AI service returned error: #{response.status}"
+        end
+      rescue => e
+        Rails.logger.error("AI Chat Error: #{e.message}")
+        render_json_error "Connection to AI service failed"
+      end
+    end
+
+    # POST /ai_for_instruments/clear_chat
+    def clear_chat
+      post_id = params[:post_id]
+      history_key = "chat_history_#{post_id}_#{current_user.id}"
+      ::PluginStore.remove('ai-for-instruments', history_key)
+      
+      render json: { ok: true }
+    end
   end
 end

@@ -32,3 +32,9 @@ plugins:
     type: string
     client: true
     description: "Расширения файлов для обработки (через разделитель |). Например: cf|epf|cfe|erf"
+
+  ai_for_instruments_chat_webhook_url:
+    default: ""
+    type: string
+    client: false
+    description: "URL для Webhook чата в n8n"

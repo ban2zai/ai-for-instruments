@@ -12,6 +12,14 @@ Discourse::Application.routes.append do
   mount ::AiForInstruments::Engine, at: "/ai_for_instruments"
 end
 
+AiForInstruments::Engine.routes.draw do
+  post "/send_webhook" => "actions#send_webhook"
+  post "/reset_limit" => "actions#reset_limit"
+  post "/chat" => "actions#chat"
+  get "/chat_history" => "actions#chat_history"
+  post "/clear_chat" => "actions#clear_chat"
+end
+
 after_initialize do
   add_to_serializer(:post, :ai_requests_left) do
     # Считаем только для первого поста

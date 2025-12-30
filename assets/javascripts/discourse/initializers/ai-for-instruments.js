@@ -1,6 +1,7 @@
 import { apiInitializer } from "discourse/lib/api";
 import AiN8nButton from "../components/ai-n8n-button";
-import AiResetButton from "../components/ai-reset-button"; // Импорт второй кнопки
+import AiResetButton from "../components/ai-reset-button";
+import AiChatButton from "../components/ai-chat-button";
 
 export default apiInitializer("1.0", (api) => {
   const siteSettings = api.container.lookup("service:site-settings");
@@ -27,6 +28,10 @@ export default apiInitializer("1.0", (api) => {
     if (isOwner || isAdmin) {
       dag.add("ai-doc-n8n", AiN8nButton, {
         before: "reply",
+      });
+
+      dag.add("ai-chat-open", AiChatButton, {
+        after: "ai-doc-n8n",
       });
     }
 
